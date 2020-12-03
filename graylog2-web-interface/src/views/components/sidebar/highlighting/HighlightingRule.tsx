@@ -15,15 +15,16 @@
  * <http://www.mongodb.com/licensing/server-side-public-license>.
  */
 import * as React from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import type { StyledComponent } from 'styled-components';
 
-import type { ThemeInterface } from 'theme';
 import { HighlightingRulesActions } from 'views/stores/HighlightingRulesStore';
 import { DEFAULT_CUSTOM_HIGHLIGHT_RANGE } from 'views/Constants';
 import Rule from 'views/logic/views/formatting/highlighting/HighlightingRule';
-import { ColorPickerPopover, Icon } from 'components/common';
+import { ColorPickerPopover, IconButton } from 'components/common';
+import HighlightForm from 'views/components/sidebar/highlighting/HighlightForm';
 
 import ColorPreview from './ColorPreview';
 
@@ -51,19 +52,13 @@ export const HighlightingRuleGrid: StyledComponent<{}, void, HTMLDivElement> = s
   }
 `;
 
-const DeleteIcon: StyledComponent<{}, ThemeInterface, HTMLSpanElement> = styled.span(({ theme }) => css`
-  width: 2rem;
-  height: 2rem;
-  margin-left: 0.4rem;
-  cursor: pointer;
+const ButtonContainer = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: center;
+`;
 
-  :active {
-    background-color: ${theme.colors.gray[90]};
-  }
-`);
+export const RuleContainer = styled.div`
+  padding-top: 4px;
+`;
 
 type Props = {
   rule: Rule,
@@ -75,9 +70,7 @@ const updateColor = (rule, newColor, hidePopover) => {
   return HighlightingRulesActions.update(newRule).then(hidePopover);
 };
 
-const onDelete = (e, rule) => {
-  e.preventDefault();
-
+const onDelete = (rule) => {
   // eslint-disable-next-line no-alert
   if (window.confirm('Do you really want to remove this highlighting?')) {
     HighlightingRulesActions.remove(rule);
@@ -86,22 +79,27 @@ const onDelete = (e, rule) => {
 
 const HighlightingRule = ({ rule }: Props) => {
   const { field, value, color, condition } = rule;
+  const [showForm, setShowForm] = useState(false);
 
   return (
-    <HighlightingRuleGrid>
-      <ColorPickerPopover id="formatting-rule-color"
-                          placement="right"
-                          color={color}
-                          colors={DEFAULT_CUSTOM_HIGHLIGHT_RANGE.map((c) => [c])}
-                          triggerNode={<ColorPreview color={color} />}
-                          onChange={(newColor, _, hidePopover) => updateColor(rule, newColor, hidePopover)} />
-      <div>
-        for <strong>{field}</strong> {condition} <i>&quot;{value}&quot;</i>.
-      </div>
-      <DeleteIcon role="presentation" title="Remove this Highlighting Rule" onClick={(e) => onDelete(e, rule)}>
-        <Icon name="trash-alt" type="regular" />
-      </DeleteIcon>
-    </HighlightingRuleGrid>
+    <>
+      <HighlightingRuleGrid>
+        <ColorPickerPopover id="formatting-rule-color"
+                            placement="right"
+                            color={color}
+                            colors={DEFAULT_CUSTOM_HIGHLIGHT_RANGE.map((c) => [c])}
+                            triggerNode={<ColorPreview color={color} />}
+                            onChange={(newColor, _, hidePopover) => updateColor(rule, newColor, hidePopover)} />
+        <RuleContainer>
+          <strong>{field}</strong> {condition} <i>&quot;{value}&quot;</i>.
+        </RuleContainer>
+        <ButtonContainer>
+          <IconButton name="edit" onClick={() => setShowForm(true)} />
+          <IconButton name="trash" onClick={() => onDelete(rule)} />
+        </ButtonContainer>
+      </HighlightingRuleGrid>
+      { showForm && <HighlightForm onClose={() => setShowForm(false)} rule={rule} />}
+    </>
   );
 };
 
